@@ -1,0 +1,64 @@
+name: Frontend CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm install
+
+    - name: Build project
+      working-directory: ./frontend
+      run: npm run build
+
+    - name: Build Docker image
+      run: |
+        docker build -t mikedoouglas/regular-chat-frontend:latest ./frontend
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+    - name: Push Docker image to Docker Hub
+      run: |
+        docker push mikedoouglas/regular-chat-frontend:latest
+
+    - name: Deploy to Server via SSH
+      uses: appleboy/ssh-action@v0.1.8
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        script: |
+          docker pull mikedoouglas/regular-chat-frontend:latest
+          docker stop chat-frontend || true
+          docker rm chat-frontend || true
+          docker run -d \
+            --name chat-frontend \
+            -p 3000:80 \
+            mikedoouglas/regular-chat-frontend:latest
