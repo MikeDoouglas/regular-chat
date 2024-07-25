@@ -49,6 +49,7 @@ const App = () => {
         socket.current.close();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -79,7 +80,7 @@ const App = () => {
       <div className="chat-container">
         <div className="messages-container">
           {messages.map((msg, index) => (
-            <div key={index} className={msg.user_id == userId ? "message your-message" : "message stranger-message"}>
+            <div key={index} className={msg.user_id === userId ? "message your-message" : "message stranger-message"}>
               <strong>{msg.user_name}:</strong> {msg.text}
             </div>
           ))}
