@@ -1,0 +1,78 @@
+name: Backend CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: '1.22'
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/.go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Install dependencies
+      run: |
+        cd backend
+        go mod tidy
+
+    - name: Build
+      run: |
+        cd backend
+        go build -o chat cmd/chat/main.go 
+
+    - name: Build Docker image
+      run: |
+        docker build -t mikedoouglas/regular-chat-backend:latest ./backend
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+    - name: Push Docker image to Docker Hub
+      run: |
+        docker push mikedoouglas/regular-chat-backend:latest
+
+    - name: Deploy to Server via SSH
+      uses: appleboy/ssh-action@v0.1.8
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        script: |
+          docker pull mikedoouglas/regular-chat-backend:latest
+          docker stop chat-backend || true
+          docker rm chat-backend || true
+          docker run -d \
+            --name chat-backend \
+            -p 8080:8080 \
+            -e ENV=${{ secrets.CHAT_BACKEND_ENV }} \
+            -e PORT=${{ secrets.CHAT_BACKEND_PORT }} \
+            mikedoouglas/regular-chat-backend:latest
