@@ -18,7 +18,8 @@ const App = () => {
   }
 
   useEffect(() => {
-    socket.current = new WebSocket('ws://localhost:8080/ws');
+    const wsUrl = process.env.REACT_APP_WS_URL || 'ws://localhost:8080/ws';
+    socket.current = new WebSocket(wsUrl);
 
     socket.current.onopen = () => {
       console.log('WebSocket conectado');
@@ -27,8 +28,8 @@ const App = () => {
     socket.current.onmessage = (event) => {
       const message = JSON.parse(event.data);
       if (!message.text && !userId && !userName && isValidUUID(message.user_id)) {
-        setUserId(message.user_id)
-        setUserName(message.user_name)
+        setUserId(message.user_id);
+        setUserName(message.user_name);
       }
 
       if (message.text) {

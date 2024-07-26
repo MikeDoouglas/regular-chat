@@ -36,7 +36,8 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t mikedoouglas/regular-chat-frontend:latest ./frontend
+        docker build --build-arg REACT_APP_WS_URL=${{ secrets.REACT_APP_WS_URL }} \
+         -t mikedoouglas/regular-chat-frontend:latest ./frontend
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
