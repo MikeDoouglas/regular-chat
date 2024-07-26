@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import './Header.js';
+import useViewportHeight from './useViewportHeight.js';
 
 import Header from './Header.js'
 
@@ -11,6 +12,7 @@ const App = () => {
   const [userName, setUserName] = useState('');
   const socket = useRef(null);
   const messagesEndRef = useRef(null);
+  const dynamicHeight = useViewportHeight();
 
   const isValidUUID = (uuid) => {
     const regex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
@@ -76,9 +78,9 @@ const App = () => {
   };
 
   return (
-    <div className="container">
+    <div className="container" style={{ height: `${dynamicHeight}px` }}>
       <Header />
-      <div className="chat-container">
+      <div className="chat-container" style={{ height: `${dynamicHeight}px` }}>
         <div className="messages-container">
           {messages.map((msg, index) => (
             <div key={index} className={msg.user_id === userId ? "message your-message" : "message stranger-message"}>
