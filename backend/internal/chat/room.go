@@ -1,8 +1,15 @@
 package chat
 
+import "sync"
+
 type Room struct {
 	Users    []*User
 	Messages []*Message
+	mutex    *sync.Mutex
+}
+
+func NewRoom(mutex *sync.Mutex) *Room {
+	return &Room{mutex: mutex}
 }
 
 func (r *Room) AddUser(user *User) {
@@ -10,8 +17,10 @@ func (r *Room) AddUser(user *User) {
 }
 
 func (r *Room) RemoveUser(user *User) {
+	r.mutex.Lock()
 	index := r.findUserIndex(user.Id)
 	r.Users = append(r.Users[:index], r.Users[index+1:]...)
+	r.mutex.Unlock()
 }
 
 func (r *Room) AddMessage(message *MessageJson) {
@@ -24,9 +33,13 @@ func (r *Room) AddMessage(message *MessageJson) {
 func (r *Room) NotifyUsers(message *MessageJson) {
 	for _, u := range r.Users {
 		if message.UserId != u.Id {
-			u.SendMessage(message)
+			u.SendMessage(message, r.mutex)
 		}
 	}
+}
+
+func (r *Room) NotifyError(user *User, message *MessageJson) {
+	user.SendMessage(message, r.mutex)
 }
 
 func (r *Room) findUserIndex(userId string) int {

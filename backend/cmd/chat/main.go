@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/joho/godotenv"
 	"github.com/mikedoouglas/chat/internal/chat"
@@ -30,7 +31,10 @@ func main() {
 	defer logger.Sync()
 
 	sugaredLogger := logger.Sugar()
-	handler := chat.NewHandler(sugaredLogger)
+	var mu sync.Mutex
+	room := chat.NewRoom(&mu)
+	nameGenerator := chat.NewNameGenerator(sugaredLogger)
+	handler := chat.NewHandler(room, nameGenerator, sugaredLogger)
 	http.HandleFunc("/ws", handler.HandleWebsocket)
 
 	port := os.Getenv("PORT")

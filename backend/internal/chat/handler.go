@@ -27,9 +27,7 @@ type Handler struct {
 	Logger        *zap.SugaredLogger
 }
 
-func NewHandler(logger *zap.SugaredLogger) *Handler {
-	room := &Room{}
-	nameGenerator := NewNameGenerator(logger)
+func NewHandler(room *Room, nameGenerator *NameGenerator, logger *zap.SugaredLogger) *Handler {
 	return &Handler{room, nameGenerator, logger}
 }
 
@@ -68,7 +66,7 @@ func (h *Handler) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) sendError(err error, user *User) {
 	switch {
 	case errors.Is(err, ErrDataSerialization):
-		user.SendMessage(&MessageJson{Type: MessageTypeError})
+		h.Room.NotifyError(user, &MessageJson{Type: MessageTypeError})
 	default:
 		user.Conn.WriteMessage(websocket.CloseInternalServerErr, nil)
 	}
