@@ -36,8 +36,8 @@ This project is a simple chat application with a ReactJS frontend and a Golang b
     ```
     or
     ```sh
-    docker build
-    docker run -p 8080:8080 --env-file .env chat
+    docker build -t chat-backend .
+    docker run -d --name chat-backend -p 8080:8080 -e ENV=develop -e PORT=8080 chat-backend
     ```
 
 **Start the frontend**:
@@ -50,8 +50,8 @@ This project is a simple chat application with a ReactJS frontend and a Golang b
     or 
 
     ```sh
-    docker build -t front .
-    docker run -p 3000:3000 front
+    docker build -t chat-frontend .
+    docker run -d --name chat-frontend -p 3000:3000 chat-frontend
     ```
 
 **Acess chat**
