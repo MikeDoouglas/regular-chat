@@ -10,55 +10,63 @@
 
 ## Overview
 
-This project is a simple chat application with a ReactJS frontend and a Golang backend communicating through WebSocket.
+RegularChat is a lightweight chat application featuring a ReactJS frontend and a Golang backend, communicating over WebSocket.
 
 ## Technologies Used
 
-- **Frontend**: ReactJS
-  - `create-react-app`
+- **Frontend**: ReactJS  
 - **Backend**: Go (Golang) 1.22
 
 ## Usage
 
-**Start the backend**:
-1. Duplicate `.env.example` and rename the copy to `.env`
-2. Fill in the environment variables
-3. Update dependencies
+### Starting the Backend
+
+1. Copy the `.env.example` file and rename it to `.env`.
+2. Fill in the required environment variables.
+3. Install dependencies:
 
     ```sh
     cd backend/
     go mod tidy
     ```
-4. Now you can run using:
+
+4. Start the backend:
 
     ```sh
     go run cmd/chat/main.go
     ```
-    or
+
+    Or use Docker:
+
     ```sh
     docker build -t chat-backend .
     docker run -d --name chat-backend -p 8080:8080 -e ENV=develop -e PORT=8080 chat-backend
     ```
 
-**Start the frontend**:
-1. Just install dependencies and run:
+### Starting the Frontend
+
+1. Install dependencies and start the app:
+
     ```sh
     cd frontend
     npm install
     npm start
     ```
-    or 
+
+    Or use Docker:
 
     ```sh
     docker build -t chat-frontend .
     docker run -d --name chat-frontend -p 3000:3000 chat-frontend
     ```
 
-**Acess chat**
+### Accessing the Chat
 
-Open in your browser `http://localhost:3000`.
+Open your browser and navigate to:  
+**`http://localhost:3000`**
 
 ## Repository Structure
+
 ```
 ├── backend
 │   ├── cmd
