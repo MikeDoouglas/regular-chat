@@ -1,4 +1,4 @@
-package chat
+package namegenerator
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ const (
 	fantasies   = "files/fantasies.txt"
 	foods       = "files/foods.txt"
 	objects     = "files/objects.txt"
-	profissions = "files/profissions.txt"
+	professions = "files/profissions.txt"
 
 	namesDelimiter = ";"
 )
@@ -28,14 +28,14 @@ type NameGenerator struct {
 	logger        *zap.SugaredLogger
 }
 
-func NewNameGenerator(logger *zap.SugaredLogger) *NameGenerator {
+func New(logger *zap.SugaredLogger) *NameGenerator {
 	files := map[string][]string{
 		adjectives:  {},
 		celebrities: {},
 		fantasies:   {},
 		foods:       {},
 		objects:     {},
-		profissions: {},
+		professions: {},
 	}
 
 	var wg sync.WaitGroup
@@ -52,7 +52,7 @@ func NewNameGenerator(logger *zap.SugaredLogger) *NameGenerator {
 		logger:     logger,
 		adjectives: files[adjectives],
 		miscellaneous: merge(
-			files[celebrities], files[fantasies], files[foods], files[objects], files[profissions]),
+			files[celebrities], files[fantasies], files[foods], files[objects], files[professions]),
 	}
 }
 
@@ -67,11 +67,12 @@ func readFiles(
 	words, err := readFile(path)
 	if err != nil {
 		logger.Errorw("failed to read file", "file", path, zap.Error(err))
+		return
 	}
 
 	mu.Lock()
+	defer mu.Unlock()
 	files[path] = strings.Split(words, namesDelimiter)
-	mu.Unlock()
 }
 
 func merge(lists ...[]string) []string {

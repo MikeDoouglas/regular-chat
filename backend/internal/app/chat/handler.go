@@ -8,6 +8,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/mikedoouglas/chat/internal/pkg/domain/model"
+	"github.com/mikedoouglas/chat/internal/pkg/domain/user"
+	namegenerator "github.com/mikedoouglas/chat/internal/pkg/generator"
 	"go.uber.org/zap"
 )
 
@@ -23,11 +26,11 @@ var upgrader = websocket.Upgrader{
 
 type Handler struct {
 	room          *Room
-	nameGenerator *NameGenerator
+	nameGenerator *namegenerator.NameGenerator
 	logger        *zap.SugaredLogger
 }
 
-func NewHandler(room *Room, nameGenerator *NameGenerator, logger *zap.SugaredLogger) *Handler {
+func NewHandler(room *Room, nameGenerator *namegenerator.NameGenerator, logger *zap.SugaredLogger) *Handler {
 	return &Handler{room, nameGenerator, logger}
 }
 
@@ -41,12 +44,12 @@ func (h *Handler) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 	userId := uuid.New().String()
 	name := h.nameGenerator.Generate()
-	user := &User{Id: userId, Name: name, Conn: conn}
+	user := user.New(userId, name, conn, h.logger)
 
 	h.room.AddUser(user)
 	defer func() {
 		h.room.RemoveUser(user)
-		h.logger.Infow("Disconnected", "user", user)
+		h.logger.Infow("Disconnected", "user_id", user.Id, "user_name", user.Name)
 	}()
 
 	if err := h.sendUserInfo(user); err != nil {
@@ -58,29 +61,36 @@ func (h *Handler) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	h.logger.Infow("New connection", "user_name", name, "user_id", userId)
 
 	if err := h.listenNewMessages(conn); err != nil {
-		h.logger.Errorw("error while listening new messages", zap.Error(err))
-		h.sendError(err, user)
+		var closeErr *websocket.CloseError
+		if errors.As(err, &closeErr) &&
+			(closeErr.Code == websocket.CloseGoingAway || closeErr.Code == websocket.CloseNormalClosure) {
+			h.logger.Infow("client disconnected", zap.Error(err))
+		} else {
+			h.logger.Errorw("unexpected error while listening new messages", zap.Error(err))
+			h.sendError(err, user)
+		}
 	}
 }
 
-func (h *Handler) sendError(err error, user *User) {
+func (h *Handler) sendError(err error, user *user.User) {
 	switch {
 	case errors.Is(err, ErrDataSerialization):
-		h.room.NotifyError(user, &MessageJson{Type: MessageTypeError})
+		h.room.NotifyError(user, &model.MessageJSON{Type: model.MessageTypeError})
 	default:
-		user.Conn.WriteMessage(websocket.CloseInternalServerErr, nil)
+		msg := websocket.FormatCloseMessage(websocket.CloseInternalServerErr, "internal server error")
+		user.WriteMessage(websocket.CloseMessage, msg)
 	}
 
 }
 
-func (h *Handler) sendUserInfo(user *User) error {
-	m := &MessageJson{UserId: user.Id, UserName: user.Name, Type: MessageTypeUserInfo}
+func (h *Handler) sendUserInfo(user *user.User) error {
+	m := &model.MessageJSON{UserId: user.Id, UserName: user.Name, Type: model.MessageTypeUserInfo}
 	message, err := json.Marshal(m)
 	if err != nil {
 		return fmt.Errorf("failed to marshal user info: %w", ErrDataSerialization)
 	}
 
-	return user.Conn.WriteMessage(websocket.TextMessage, message)
+	return user.WriteMessage(websocket.TextMessage, message)
 }
 
 func (h *Handler) listenNewMessages(conn *websocket.Conn) error {
@@ -90,7 +100,7 @@ func (h *Handler) listenNewMessages(conn *websocket.Conn) error {
 			return fmt.Errorf("failed to read message: %w", err)
 		}
 
-		var message *MessageJson
+		var message *model.MessageJSON
 		if err := json.Unmarshal(m, &message); err != nil {
 			return fmt.Errorf("failed to unmarshal received message: %w", ErrDataSerialization)
 		}
