@@ -1,4 +1,4 @@
-package chat
+package model
 
 type MessageType string
 
@@ -8,7 +8,7 @@ const (
 	MessageTypeUserInfo MessageType = "USER_INFO"
 )
 
-type MessageJson struct {
+type MessageJSON struct {
 	Text     string      `json:"text"`
 	UserId   string      `json:"user_id"`
 	UserName string      `json:"user_name"`
