@@ -74,5 +74,5 @@ jobs:
             --name chat-backend \
             -p 8080:8080 \
             -e ENV=${{ secrets.CHAT_BACKEND_ENV }} \
-            -e PORT=${{ secrets.CHAT_BACKEND_PORT }} \
+            -e PORT=8080 \
             mikedoouglas/regular-chat-backend:latest
